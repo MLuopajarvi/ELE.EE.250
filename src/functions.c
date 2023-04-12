@@ -2,33 +2,42 @@
 
 void initialize_system()
 {
-    // Configure pins for LED and servo
-    //DDRB |= (1 << PB1) | (1 << PB3);
-    //TCCR1A |= (1 << COM1A1) | (1 << WGM11);
-    //TCCR1B |= (1 << WGM12) | (1 << WGM13) | (1 << CS11);
-    //OCR1A = 0;
-
-    // Set up Timer/Counter 0 for Fast PWM
-    TCCR0A |= (1 << WGM01) | (1 << WGM00);   // Fast PWM mode
-    TCCR0A |= (1 << COM0A1);                 // Non-inverted PWM on OCR0A
-    TCCR0B |= (1 << CS01);                   // Prescaler of 8
+     // Set Timer 1 output pin as output
+    DDRB |= (1 << PB1);
     
-    // Set up PB0 (pin 8) for PWM output
-    DDRB |= (1 << PB0);                      // Set PB0 as an output pin
+    // Set up clock
+    CLKPR = (1<<CLKPCE); // enable change of clock prescaler
+    CLKPR = 0; // set clock prescaler to 1
+
+    // Set up IO pin
+    DDRB |= (1<<PB1); // set PB1 as output (for LED)
+    DDRD |= (1<<PD5); // set PD5 as output (for servo signal)
+    PORTD &= ~(1<<PD5); // set PD5 low initially (for servo signal)  
     
     // Configure ADC for reading potentiometer
-    ADMUX |= (1 << REFS1) | (1 << MUX0);
-    ADCSRA |= (1 << ADEN) | (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0) | (1 << ADIE);
+    ADMUX |= (1 << REFS0);                                   // Set reference voltage to AVCC
+    ADCSRA |= (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0);    // Set ADC prescaler to 128
+    ADCSRA |= (1 << ADIE);                                   // Enable ADC interrupt
+    ADCSRA |= (1 << ADEN);                                   // Enable ADC
+    
+    // Set up PWM control of the servo
+    TCCR1B |= (1 << CS11) | (1 << CS10); // Set Timer 1 prescaler to 64
+
+    TCCR1A |= (1 << WGM11) | (1 << WGM10);  // Set Timer 1 to Fast PWM mode
+    TCCR1B |= (1 << WGM13) | (1 << WGM12);
+
+    TCCR1A |= (1 << COM1A1);    // Set Timer 1 to non-inverted output mode
+    ICR1 = 4999;                // Set Timer 1 TOP value to 4999 for 20ms period
+    OCR1A = 375;                // Set initial servo position to middle
+
+    // Set up on/off switch   
+    DDRD &= ~(1 << PD3);        // Set switch pin as input
+    PORTD |= (1 << PD3);        // Enable pull-up resistor
+    
+    PCMSK2 |= (1 << PCINT18);   // Enable pin change interrupt on switch pin
+    PCICR |= (1 << PCIE2);      // Enable pin change interrupt
+
     sei();
-    
-    // Configure USART for serial communication
-    UBRR0 = F_CPU / (16UL * BAUDRATE) - 1;
-    UCSR0B |= (1 << RXCIE0) | (1 << RXEN0) | (1 << TXEN0);
-    UCSR0C |= (1 << UCSZ01) | (1 << UCSZ00);
-    
-    // Configure switch
-    DDRD &= ~(1 << PD2);
-    PORTD |= (1 << PD2);
 }
 
 
@@ -49,7 +58,6 @@ int update_servo_position(int amount) {
 }
 
 void update_led_brightness(uint8_t servo_pos) {
-    uint8_t brightness = map(servo_pos, 0, 180, 0, 255); // Map servo position to LED brightness range (0-255)
     OCR0A = brightness; // Update the PWM duty cycle for LED brightness control
 }
 
@@ -57,8 +65,6 @@ void enter_low_power_mode() {
     sleep_flag = 1;
     TCCR0B = 0;  // stop Timer0  
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);  // set sleep mode
-    sleep_enable();  // enable sleep
-    sleep_cpu();  // enter sleep  
 }
 
 void update_temperature() {
