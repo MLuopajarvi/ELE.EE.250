@@ -29,7 +29,8 @@ int main()
     while (1) {
         // If switch is on, operate normally
         if (system_on == 1) {
-            update_servo_position(pot_value);
+            servo_position = update_servo_position(pot_value);
+            update_led(servo_position);
         }
     }
     return 0;

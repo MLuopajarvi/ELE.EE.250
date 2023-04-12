@@ -13,5 +13,6 @@
 
 // Function declarations
 void initialize_system();
-void update_servo_position(int amount);
+int update_servo_position(int amount);
 void enter_low_power_mode();
+void update_led(uint16_t servo_pos);

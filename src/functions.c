@@ -22,13 +22,18 @@ void initialize_system()
     
     // Set up PWM control of the servo
     TCCR1B |= (1 << CS11) | (1 << CS10); // Set Timer 1 prescaler to 64
-
     TCCR1A |= (1 << WGM11) | (1 << WGM10);  // Set Timer 1 to Fast PWM mode
     TCCR1B |= (1 << WGM13) | (1 << WGM12);
 
     TCCR1A |= (1 << COM1A1);    // Set Timer 1 to non-inverted output mode
     ICR1 = 4999;                // Set Timer 1 TOP value to 4999 for 20ms period
     OCR1A = 375;                // Set initial servo position to middle
+
+    // Set up PWM for the LED
+    TCCR0B |= (1 << CS01) | (1 << CS00);    // Set Timer 0 prescaler to 64
+    TCCR0A |= (1 << WGM01) | (1 << WGM00);  // Set Timer 0 to Fast PWM mode
+    TCCR0A |= (1 << COM0A1);                // Set Timer 0 to non-inverted output mode
+
 
     // Set up on/off switch   
     DDRD &= ~(1 << PD3);        // Set switch pin as input
@@ -42,13 +47,15 @@ void initialize_system()
 
 
 // Updates the position of the servo motor
-void update_servo_position(int amount) {
+int update_servo_position(int amount) {
     // Start ADC conversion
     ADCSRA |= (1 << ADSC);
     // Wait for conversion to complete
     while (ADCSRA & (1 << ADSC));
     // Map potentiometer value to servo position
-    OCR1A = 375 + (amount * 3) / 10;
+    int servo_pos = 375 + (amount * 3) / 10;
+    OCR1A = servo_pos;
+    return servo_pos;
 }
 
 void update_led_brightness(uint8_t servo_pos) {
@@ -61,4 +68,11 @@ void enter_low_power_mode() {
     sleep_enable();
     sleep_cpu();
     sleep_disable();
+}
+
+void update_led(uint16_t servo_pos) {
+    // Map servo position to LED brightness (0-255)
+    uint8_t brightness = (servo_pos * 255) / 1023;
+    // Set Timer 0 compare match value to control LED brightness
+    OCR0A = brightness;
 }
