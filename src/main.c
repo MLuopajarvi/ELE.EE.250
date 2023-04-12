@@ -17,7 +17,7 @@ ISR(PCINT2_vect) {
     } else {
         system_on = 0;
         // Enter low power mode
-        sleep_system();
+        enter_low_power_mode();
     }
 }
 

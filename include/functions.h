@@ -1,5 +1,6 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <avr/sleep.h>
 #include <util/delay.h>
 
 #define LED_PIN     PB0
@@ -9,10 +10,6 @@
 
 // Constants
 #define BAUDRATE 9600
-
-// globals
-volatile int temperature = 0;
-volatile uint8_t sleep_flag = 1;
 
 // Function declarations
 void initialize_system();
