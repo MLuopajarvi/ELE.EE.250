@@ -4,7 +4,7 @@ void initialize_system()
 {
      // Set Timer 1 output pin as output
     DDRB |= (1 << PB1);
-    
+
     // Set up clock
     CLKPR = (1<<CLKPCE); // enable change of clock prescaler
     CLKPR = 0; // set clock prescaler to 1
@@ -42,43 +42,23 @@ void initialize_system()
 
 
 // Updates the position of the servo motor
-int update_servo_position(int amount) {
-    
-    if (amount < -90) {
-        amount = -90;
-    }
-    else if (amount > 90) {
-        amount = 90;
-    }
-    
-    int pulse_width = (amount + 90) * 10 + 1000;
-    OCR1A = pulse_width / 4;
-
-    return amount;
+void update_servo_position(int amount) {
+    // Start ADC conversion
+    ADCSRA |= (1 << ADSC);
+    // Wait for conversion to complete
+    while (ADCSRA & (1 << ADSC));
+    // Map potentiometer value to servo position
+    OCR1A = 375 + (amount * 3) / 10;
 }
 
 void update_led_brightness(uint8_t servo_pos) {
-    OCR0A = brightness; // Update the PWM duty cycle for LED brightness control
 }
 
 void enter_low_power_mode() {
-    sleep_flag = 1;
-    TCCR0B = 0;  // stop Timer0  
-    set_sleep_mode(SLEEP_MODE_PWR_DOWN);  // set sleep mode
-}
-
-void update_temperature() {
-
-}
-
-void send_data_to_uart() {
-
-}
-
-void wait_for_switch_on() {
-
-}
-
-void send_uart_string(char *str) {
-
+    TCCR1B = 0;  // stop Timer0  
+    // Enter sleep mode with ADC noise reduction
+    set_sleep_mode(SLEEP_MODE_ADC);
+    sleep_enable();
+    sleep_cpu();
+    sleep_disable();
 }
