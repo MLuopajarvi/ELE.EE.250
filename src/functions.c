@@ -50,6 +50,8 @@ void initialize_system()
     sei();
 }
 
+
+
 uint16_t read_adc(uint8_t adc_pin) {
     // Select ADC input pin
     ADMUX = (ADMUX & 0xF0) | (adc_pin & 0x0F);
@@ -62,12 +64,11 @@ uint16_t read_adc(uint8_t adc_pin) {
 }
 
 
-
 // Updates the position of the servo motor
-int update_servo_position(int amount) {
-    amount = read_adc(POT_PIN);
+int update_servo_position(int increment) {
+    uint16_t adc_val = read_adc(POT_PIN);
     // Map potentiometer value to servo position
-    int servo_pos = 375 + (amount * 3) / 10;
+    int servo_pos = 375 + ((adc_val + increment) * 3) / 10;
     OCR1A = servo_pos;
     return servo_pos;
 }
@@ -98,13 +99,26 @@ void update_led(uint16_t servo_pos) {
 }
 
 
-void send_UART(uint16_t servo_pos) {
+void send_UART(uint16_t servo_pos, float temp) {
     // Convert servo position to ASCII string
-    char buf[5];
-    sprintf(buf, "%d\r\n", servo_pos);
+    char buf[10];
+    sprintf(buf, "Servo:%d  Temp:%f\r\n", servo_pos,temp);
     // Send string to UART
     for (uint8_t i = 0; i < strlen(buf); i++) {
         while (!(UCSR0A & (1 << UDRE0))); // Wait for empty transmit buffer
         UDR0 = buf[i]; // Send next character
+    }
+}
+
+void read_UART() {
+    if (UCSR0A & (1 << RXC0)) {
+        // Read input character from UART
+        char input_char = UDR0;
+        // Handle increment/decrement commands
+        if (input_char == '+') {
+            update_servo_position(1);
+        } else if (input_char == '-') {
+            update_servo_position(-1);
+        }
     }
 }

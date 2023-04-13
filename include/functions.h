@@ -15,10 +15,12 @@
 #define THERMISTOR_R0 10000.0 // Thermistor resistance at 25°C
 #define THERMISTOR_B 3950.0 // Thermistor beta value
 
+
 // Function declarations
 void initialize_system();
-int update_servo_position(int amount);
+int update_servo_position(int increment);
 void enter_low_power_mode();
 void update_led(uint16_t servo_pos);
-void send_UART(uint16_t servo_pos);
+void send_UART(uint16_t servo_pos, float temp);
 float read_temp();
+void read_UART();
