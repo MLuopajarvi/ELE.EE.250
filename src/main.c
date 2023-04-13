@@ -4,6 +4,7 @@
 volatile uint8_t system_on = 0;
 volatile int servo_position = 0;
 volatile uint16_t pot_value = 0;
+float temp = 0;
 
 ISR(ADC_vect) {
     // Read ADC value
@@ -31,6 +32,7 @@ int main()
         if (system_on == 1) {
             servo_position = update_servo_position(pot_value);
             update_led(servo_position);
+            temp = read_temp();
         }
     }
     return 0;
