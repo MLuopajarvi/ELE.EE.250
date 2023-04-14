@@ -6,7 +6,6 @@
 #include <string.h>
 #include <stdio.h>
 
-
 #define LED_PIN     PB0
 #define POT_PIN     PC0
 #define INTERVAL_MS 500

@@ -2,51 +2,52 @@
 
 void initialize_system()
 {
-    
-    DDRB |= (1 << PB1);                                      // Set Timer 1 output pin as output
+    //DDRB |= (1 << PB1);                                      // Set Timer 1 output pin as output
 
     // Set up clock
-    CLKPR = (1<<CLKPCE);                                     // enable change of clock prescaler
-    CLKPR = 0;                                               // set clock prescaler to 1
+    //CLKPR = (1<<CLKPCE);                                     // enable change of clock prescaler
+    //CLKPR = 0;                                               // set clock prescaler to 1
 
     // Set up IO pin
     DDRB |= (1<<PB1);                                        // set PB1 as output (for LED)
-    DDRD |= (1<<PD5);                                        // set PD5 as output (for servo signal)
-    PORTD &= ~(1<<PD5);                                      // set PD5 low initially (for servo signal)  
+    //PORTD &= ~(1<<PD5);                                      // set PD5 low initially (for servo signal)  
     
     // Configure ADC
-    ADMUX |= (1 << REFS0);                                   // Set reference voltage to AVCC
-    ADCSRA |= (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0);    // Set ADC prescaler to 128
-    ADCSRA |= (1 << ADIE);                                   // Enable ADC interrupt
-    ADCSRA |= (1 << ADEN);                                   // Enable ADC
+    //ADMUX |= (1 << REFS0);                                   // Set reference voltage to AVCC
+    //ADCSRA |= (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0);    // Set ADC prescaler to 128
+    //ADCSRA |= (1 << ADIE);                                   // Enable ADC interrupt
+    //ADCSRA |= (1 << ADEN);                                   // Enable ADC
     
     // Set up PWM control of the servo
-    TCCR1B |= (1 << CS11) | (1 << CS10);                    // Set Timer 1 prescaler to 64
-    TCCR1A |= (1 << WGM11) | (1 << WGM10);                  // Set Timer 1 to Fast PWM mode
+    DDRD |= (1<<PD5);                                        // set PD5 as output (for servo signal)
+
+    TCCR1B |= (1 << CS11);                                  // Set Timer 1 prescaler to 64
+    TCCR1A |= (1 << WGM11);                                 // Set Timer 1 to Fast PWM mode
     TCCR1B |= (1 << WGM13) | (1 << WGM12);
 
-    TCCR1A |= (1 << COM1A1);                                // Set Timer 1 to non-inverted output mode
-    ICR1 = 4999;                                            // Set Timer 1 TOP value to 4999 for 20ms period
-    OCR1A = 375;                                            // Set initial servo position to middle
+    TCCR1A |= (1<<COM1A1 | 1<<COM1A0);                      // Inverted mode
+    ICR1 = F_CPU/50;                                        // Set ICR1 for 50Hz
+    OCR1A = ICR1 - 20000;                                   // Set initial servo position to middle (PW 20k cycles)
 
     // Set up PWM for the LED
-    TCCR0B |= (1 << CS01) | (1 << CS00);                    // Set Timer 0 prescaler to 64
-    TCCR0A |= (1 << WGM01) | (1 << WGM00);                  // Set Timer 0 to Fast PWM mode
-    TCCR0A |= (1 << COM0A1);                                // Set Timer 0 to non-inverted output mode
+    //TCCR0B |= (1 << CS01) | (1 << CS00);                    // Set Timer 0 prescaler to 64
+    //TCCR0A |= (1 << WGM01) | (1 << WGM00);                  // Set Timer 0 to Fast PWM mode
+    //TCCR0A |= (1 << COM0A1);                                // Set Timer 0 to non-inverted output mode
 
 
     // Set up on/off switch   
-    DDRD &= ~(1 << PD3);                                    // Set switch pin as input
-    PORTD |= (1 << PD3);                                    // Enable pull-up resistor
+    //DDRD &= ~(1 << PD3);                                    // Set switch pin as input
+    //PORTD |= (1 << PD3);                                    // Enable pull-up resistor
     
-    PCMSK2 |= (1 << PCINT18);                               // Enable pin change interrupt on switch pin
-    PCICR |= (1 << PCIE2);                                  // Enable pin change interrupt
+    //PCMSK2 |= (1 << PCINT19);                               // Enable pin change interrupt on switch pin
+    //PCICR |= (1 << PCIE2);                                  // Enable pin change interrupt
 
 
     // Set up terminal UART
-    UBRR0 = 103;                                            // Set baud rate to 9600
-    UCSR0B |= (1 << TXEN0) | (1 << RXEN0);                  // Enable transmitter and receiver
-    UCSR0C |= (1 << UCSZ01) | (1 << UCSZ00);                // Set frame format: 8 data bits, no parity, 1 stop bit
+    //UBRR0 = 103;                                            // Set baud rate to 9600
+    //UCSR0B |= (1 << TXEN0) | (1 << RXEN0);                  // Enable transmitter and receiver
+    //UCSR0C |= (1 << UCSZ01) | (1 << UCSZ00);                // Set frame format: 8 data bits, no parity, 1 stop bit
+    
     sei();
 }
 
