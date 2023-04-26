@@ -6,9 +6,10 @@
 #include <string.h>
 #include <stdio.h>
 
-#define LED_PIN     PB0
+#define LED_PIN     PB1
 #define POT_PIN     PC0
-#define INTERVAL_MS 500
+#define SERVO_PIN   PD5
+#define SWITCH_PIN  PD3
 
 #define THERM_PIN   PC5
 #define THERMISTOR_R0 10000.0 // Thermistor resistance at 25°C
@@ -23,3 +24,4 @@ void update_led(uint16_t servo_pos);
 void send_UART(uint16_t servo_pos, float temp);
 float read_temp();
 void read_UART();
+void USART_Transmit_string(char *data );

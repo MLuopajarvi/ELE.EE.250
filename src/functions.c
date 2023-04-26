@@ -2,52 +2,58 @@
 
 void initialize_system()
 {
-    //DDRB |= (1 << PB1);                                      // Set Timer 1 output pin as output
+    cli();
 
-    // Set up clock
-    //CLKPR = (1<<CLKPCE);                                     // enable change of clock prescaler
-    //CLKPR = 0;                                               // set clock prescaler to 1
+    CLKPR = (1 << CLKPCE);  // enable change of clock prescaler
+    CLKPR = 0x00;           // set clock prescaler to 1 (default)
 
-    // Set up IO pin
-    DDRB |= (1<<PB1);                                        // set PB1 as output (for LED)
-    //PORTD &= ~(1<<PD5);                                      // set PD5 low initially (for servo signal)  
+    DDRB |= (1 << LED_PIN);     // set PB1 as output
+    DDRD &= ~(1 << SWITCH_PIN);    // set PD3 as input (for switch)
+    PORTD |= (1 << SWITCH_PIN);    // enable pull-up resistor on PD3
+    EICRA |= (1 << ISC01);  // set INT0 to trigger on falling edge
+    EIMSK |= (1 << INT1);   // enable INT1
     
-    // Configure ADC
-    //ADMUX |= (1 << REFS0);                                   // Set reference voltage to AVCC
-    //ADCSRA |= (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0);    // Set ADC prescaler to 128
-    //ADCSRA |= (1 << ADIE);                                   // Enable ADC interrupt
-    //ADCSRA |= (1 << ADEN);                                   // Enable ADC
+
+    // Enable Servo pin (PD5)
+    DDRD |= (1 << SERVO_PIN);
+
+    // SET TC0 TOP
+    OCR0A = 0x9B;
+
+    //Count
+    TCNT0 = 0x0;
+
+    //COM0A 0; COM0B 2; WGM0 3; 
+    TCCR0A = 0x23;
+
+    //CS0 RUNNING_CLK_1024; FOC0A disabled; FOC0B disabled; WGM02 1; 
+    TCCR0B = 0xD;
+
+    //OCIE0A disabled; OCIE0B disabled; TOIE0 disabled; 
+    TIMSK0 = 0x04;
+
+    OCR0B = 155 * 0.05 + (155 * 0.1);
+
+
+    // Set up ADC
+    ADMUX = (1 << REFS0); //external capacitor at Vref and ADC done from pin ADC0
+	ADCSRA = (1 << ADIE) | (1 << ADPS0) | (1 << ADPS1) | (1 << ADPS2); //enable and set prescaler
+	ADCSRA |= (1 << ADEN); // Enable AD-converter
+    ADMUX |= (1 << ADLAR); // Setting to Left justified mode so only 8 bits can be read
+    DIDR0 = (1 << ADC0D) | (1 << ADC1D); // disable input buffer for ADC pins.
     
-    // Set up PWM control of the servo
-    DDRD |= (1<<PD5);                                        // set PD5 as output (for servo signal)
-
-    TCCR1B |= (1 << CS11);                                  // Set Timer 1 prescaler to 64
-    TCCR1A |= (1 << WGM11);                                 // Set Timer 1 to Fast PWM mode
-    TCCR1B |= (1 << WGM13) | (1 << WGM12);
-
-    TCCR1A |= (1<<COM1A1 | 1<<COM1A0);                      // Inverted mode
-    ICR1 = F_CPU/50;                                        // Set ICR1 for 50Hz
-    OCR1A = ICR1 - 20000;                                   // Set initial servo position to middle (PW 20k cycles)
-
-    // Set up PWM for the LED
-    //TCCR0B |= (1 << CS01) | (1 << CS00);                    // Set Timer 0 prescaler to 64
-    //TCCR0A |= (1 << WGM01) | (1 << WGM00);                  // Set Timer 0 to Fast PWM mode
-    //TCCR0A |= (1 << COM0A1);                                // Set Timer 0 to non-inverted output mode
-
-
-    // Set up on/off switch   
-    //DDRD &= ~(1 << PD3);                                    // Set switch pin as input
-    //PORTD |= (1 << PD3);                                    // Enable pull-up resistor
     
-    //PCMSK2 |= (1 << PCINT19);                               // Enable pin change interrupt on switch pin
-    //PCICR |= (1 << PCIE2);                                  // Enable pin change interrupt
+	// USART Setup
+	// Set the USART0 module to the options selected in the user interface.
+    //UBRR0 1; 
+    UBRR0 = 0x1;
+    //DOR0 disabled; FE0 disabled; MPCM0 disabled; RXC0 disabled; TXC0 disabled; U2X0 enabled; UDRE0 disabled; UPE0 disabled; 
+    UCSR0A = 0x2;
+    //RXB80 disabled; RXCIE0 disabled; RXEN0 enabled; TXB80 disabled; TXCIE0 disabled; TXEN0 enabled; UCSZ02 disabled; UDRIE0 disabled; 
+    UCSR0B = 0x18;
+    //UCPOL0 disabled; UCSZ0 3; UMSEL0 Asynchronous Mode; UPM0 Disabled; USBS0 1-bit; 
+    UCSR0C = 0x6;
 
-
-    // Set up terminal UART
-    //UBRR0 = 103;                                            // Set baud rate to 9600
-    //UCSR0B |= (1 << TXEN0) | (1 << RXEN0);                  // Enable transmitter and receiver
-    //UCSR0C |= (1 << UCSZ01) | (1 << UCSZ00);                // Set frame format: 8 data bits, no parity, 1 stop bit
-    
     sei();
 }
 
@@ -70,7 +76,7 @@ int update_servo_position(int increment) {
     uint16_t adc_val = read_adc(POT_PIN);
     // Map potentiometer value to servo position
     int servo_pos = 375 + ((adc_val + increment) * 3) / 10;
-    OCR1A = servo_pos;
+    OCR0A = servo_pos;
     return servo_pos;
 }
 
@@ -103,12 +109,33 @@ void update_led(uint16_t servo_pos) {
 void send_UART(uint16_t servo_pos, float temp) {
     // Convert servo position to ASCII string
     char buf[10];
-    sprintf(buf, "Servo:%d  Temp:%f\r\n", servo_pos,temp);
-    // Send string to UART
-    for (uint8_t i = 0; i < strlen(buf); i++) {
-        while (!(UCSR0A & (1 << UDRE0))); // Wait for empty transmit buffer
-        UDR0 = buf[i]; // Send next character
-    }
+    char* string = "servo: ";
+    char dest[12];
+    strcpy( dest, string );
+    strcat(string, itoa(servo_pos, buf, 10));
+    USART_Transmit_string(string);
+}
+
+void USART_Transmit_string( char *data )
+
+{
+
+	uint8_t i=0;
+
+	while(data[i] != 0) {
+
+		/* Wait for empty transmit buffer */
+
+		while ( !( UCSR0A & (1<<UDRE0)) ) ;
+
+			/* Put data into buffer, sends the data */
+
+		UDR0 = data[i];
+
+		i++;
+
+	}
+
 }
 
 void read_UART() {
