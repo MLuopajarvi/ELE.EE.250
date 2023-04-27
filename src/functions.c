@@ -21,7 +21,7 @@ void initialize_system()
     TCCR0A = 0x23;                                              //COM0A 0; COM0B 2; WGM0 3;
     TCCR0B = 0xD;                                               //CS0 RUNNING_CLK_1024; FOC0A disabled; FOC0B disabled; Fast Mode PWM with OCR0A as TOP; 
     TIMSK0 = 0x04;                                              //OCIE0A disabled; OCIE0B disabled; TOIE0 enabled for debugging; 
-    uint16_t servo_dc = pwm_top * 0.09 + (pwm_top * 0.055);      // Calibrated duty cycle: 9%: 0 degrees, 21%: 180 degrees, set initial position to 90 degrees
+    uint16_t servo_dc = pwm_top * 0.09 + (pwm_top * 0.056);      // Calibrated duty cycle: 9%: 0 degrees, 21%: 180 degrees, set initial position to 90 degrees
     OCR0B = servo_dc;                                           // Set OCR0B at 7.5% duty cycle for middle position
 
 
@@ -44,8 +44,16 @@ void initialize_system()
     
     
 	// USART Setup
-    UBRR0 = UBRRVALUE;
-    UCSR0B = (1<<RXEN0)|(1<<TXEN0);
+    UBRR0 = 0x067;
+
+    //DOR0 disabled; FE0 disabled; MPCM0 disabled; RXC0 disabled; TXC0 disabled; U2X0 disabled; UDRE0 disabled; UPE0 disabled; 
+    UCSR0A = 0x0;
+
+    //RXB80 disabled; RXCIE0 disabled; RXEN0 enabled; TXB80 disabled; TXCIE0 disabled; TXEN0 enabled; UCSZ02 disabled; UDRIE0 disabled; 
+    UCSR0B = 0x18;
+
+    //UCPOL0 disabled; UCSZ0 3; UMSEL0 Asynchronous Mode; UPM0 Disabled; USBS0 1-bit; 
+    UCSR0C = 0x6;
 
     // Enable global interrups
     sei();
@@ -104,15 +112,15 @@ void update_led(uint16_t servo_pos) {
 
 void send_UART(uint16_t servo_pos, float temp) {
     // Convert servo position to ASCII string
-    //char buf[10];
-    unsigned char* string = "VITTU SAATANA";
+    char buf[10];
+    //char* string = "VIHHU SAATANA\r\n";
     //char dest[12];
     //strcpy( dest, string );
     //strcat(string, itoa(servo_pos, buf, 10));
-    USART_Transmit_string(string);
+    USART_Transmit_string(itoa(servo_pos, buf, 10));
 }
 
-void USART_Transmit_string( unsigned char *data )
+void USART_Transmit_string( char *data )
 
 {
 
@@ -124,7 +132,7 @@ void USART_Transmit_string( unsigned char *data )
 
 		while ( !( UCSR0A & (1<<UDRE0)) ) ;
 
-			/* Put data into buffer, sends the data */
+        /* Put data into buffer, sends the data */
 
 		UDR0 = data[i];
 

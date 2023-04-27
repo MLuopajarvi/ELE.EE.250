@@ -31,4 +31,4 @@ void send_UART(uint16_t servo_pos, float temp);
 float read_temp();
 void read_UART();
 uint16_t read_adc(uint8_t adc_pin);
-void USART_Transmit_string(unsigned char *data );
+void USART_Transmit_string(char *data );
