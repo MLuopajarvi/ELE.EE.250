@@ -8,8 +8,11 @@
 
 #define LED_PIN     PB1
 #define POT_PIN     PC0
-#define SERVO_PIN   PD5
 #define SWITCH_PIN  PD3
+
+#define SERVO_PIN   PD5
+#define PWM_FREQ    50      // PWM frequency in Hz
+#define PWM_PRESC   1024    // PWM prescaler
 
 #define THERM_PIN   PC5
 #define THERMISTOR_R0 10000.0 // Thermistor resistance at 25°C
