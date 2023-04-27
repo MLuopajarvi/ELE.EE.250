@@ -5,6 +5,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define LED_PIN     PB1
 #define POT_PIN     PC0
@@ -19,12 +20,15 @@
 #define THERMISTOR_B 3950.0 // Thermistor beta value
 
 
+#define UBRRVALUE (F_CPU/(16ul*9600)-1)
+
 // Function declarations
 void initialize_system();
-int update_servo_position(int increment);
+void update_servo_position(int degrees);
 void enter_low_power_mode();
 void update_led(uint16_t servo_pos);
 void send_UART(uint16_t servo_pos, float temp);
 float read_temp();
 void read_UART();
-void USART_Transmit_string(char *data );
+uint16_t read_adc(uint8_t adc_pin);
+void USART_Transmit_string(unsigned char *data );

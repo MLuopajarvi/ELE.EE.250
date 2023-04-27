@@ -1,4 +1,4 @@
-#define F_CPU 16000000
+#define F_CPU 16000000ul
 
 #include "../include/functions.h"
 
@@ -23,10 +23,6 @@ ISR(INT1_vect)
     }
 }
 
-ISR(TIMER0_COMPB_vect) {
-    PORTB ^= (1 << PB1);   // toggle LED
-}
-
 int main(void)
 {
     
@@ -36,18 +32,12 @@ int main(void)
     {
         if (switch_on == 1)
         {
-            _delay_ms(1000);
-            servo_angle = 0;
-            OCR0B = ICR1 * 0.1; 
+            int pot_adc = 5000;
+            servo_angle = pot_adc/28; // conversion from ad to angle, rough rounding from 27,77 to 28
+            send_UART(servo_angle, temp);
+            update_servo_position(servo_angle);
             update_led(servo_angle);
-            // _delay_ms(100);
-            // PORTB ^= (1 << PB1);   // toggle LED
-            //send_UART(servo_pos, temp);
-            _delay_ms(1000);
-            servo_angle = 180;
-           // OCR0B = 154 * 0.05;
-            OCR0B = ICR1 * 0.05;
-            update_led(servo_angle);
+            _delay_ms(500);
         }
     }
     
