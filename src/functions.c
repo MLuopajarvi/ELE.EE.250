@@ -38,12 +38,10 @@ void initialize_system()
     OCR1A = 0;                  // Set the LED brightness to 0
 
     // Set up ADC
-    ADMUX = (1 << REFS0); //external capacitor at Vref and ADC done from pin ADC0
-	ADCSRA = (1 << ADIE) | (1 << ADPS0) | (1 << ADPS1) | (1 << ADPS2); //enable and set prescaler
-	ADCSRA |= (1 << ADEN); // Enable AD-converter
-    ADMUX |= (1 << ADLAR); // Setting to Left justified mode so only 8 bits can be read
-    DIDR0 = (1 << ADC0D) | (1 << ADC1D); // disable input buffer for ADC pins.
-    
+    ADMUX |= (1 << REFS0);          // Set reference voltage to AVCC
+    ADMUX &= ~(1 << ADLAR);         // Right-justify ADC result
+    ADCSRA |= (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0);  // Set ADC prescaler to 128
+    ADCSRA |= (1 << ADEN);          // Enable ADC
     
 	// USART Setup
     UBRR0 = UBRRVALUE;
@@ -58,14 +56,19 @@ void initialize_system()
 
 
 uint16_t read_adc(uint8_t adc_pin) {
-    // Select ADC input pin
-    ADMUX = (ADMUX & 0xF0) | (adc_pin & 0x0F);
-    // Start ADC conversion
-    ADCSRA |= (1 << ADSC);
-    // Wait for conversion to complete
-    while( !(ADCSRA & (1<<ADIF)) );
-    // Return ADC result
-    return ADCH;
+    // // Select ADC input pin
+    // ADMUX = (ADMUX & 0xF0) | (adc_pin & 0x0F);
+    // // Start ADC conversion
+    // ADCSRA |= (1 << ADSC);
+    // // Wait for conversion to complete
+    // while( !(ADCSRA & (1<<ADIF)) );
+    // // Return ADC result
+    // return ADCH;
+    ADMUX &= 0xF0;                  // Clear previous ADC channel
+    ADMUX |= adc_pin;           // Set new ADC channel
+    ADCSRA |= (1 << ADSC);          // Start conversion
+    while (ADCSRA & (1 << ADSC));   // Wait for conversion to complete
+    return ADC;                     // Return the ADC result
 }
 
 

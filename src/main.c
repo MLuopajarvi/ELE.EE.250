@@ -37,16 +37,16 @@ int main(void)
         {
             pot_adc = 5000;
             servo_angle = pot_adc/28; // conversion from ad to angle, rough rounding from 27,77 to 28
-            send_UART(servo_angle, temp);
             update_servo_position(servo_angle);
             update_led(servo_angle);
+            send_UART(servo_angle, temp);
             _delay_ms(1000);
 
-            pot_adc = 0;
+            pot_adc = read_adc(POT_PIN);
             servo_angle = pot_adc/28; // conversion from ad to angle, rough rounding from 27,77 to 28
-            send_UART(servo_angle, temp);
             update_servo_position(servo_angle);
             update_led(servo_angle);
+            send_UART(servo_angle, temp);
             _delay_ms(1000);
         }
     }
