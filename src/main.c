@@ -1,4 +1,4 @@
-#define F_CPU 16000000ul
+#define F_CPU 16000000
 
 #include "../include/functions.h"
 
@@ -21,6 +21,11 @@ ISR(INT1_vect)
     }
 }
 
+ISR(TIMER0_COMPB_vect) {
+    //For what ever reason, ISR for T0 needs to be added for the program to work at all
+}
+
+
 int main(void)
 {
     
@@ -35,14 +40,14 @@ int main(void)
             send_UART(servo_angle, temp);
             update_servo_position(servo_angle);
             update_led(servo_angle);
-            _delay_ms(500);
+            _delay_ms(1000);
 
-            pot_adc = 2500;
+            pot_adc = 0;
             servo_angle = pot_adc/28; // conversion from ad to angle, rough rounding from 27,77 to 28
             send_UART(servo_angle, temp);
             update_servo_position(servo_angle);
             update_led(servo_angle);
-            _delay_ms(500);
+            _delay_ms(1000);
         }
     }
     

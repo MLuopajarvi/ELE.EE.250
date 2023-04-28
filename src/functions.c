@@ -1,14 +1,16 @@
 #include "../include/functions.h"
 
-uint8_t pwm_top = (F_CPU / PWM_PRESC) / (2 * PWM_FREQ) - 1; // calculate PWM TOP value: ((16Mhz/1024)/(2*50Hz))-1
+uint16_t pwm_top = (F_CPU / PWM_PRESC) / (2 * PWM_FREQ) - 1; // calculate PWM TOP value: ((16Mhz/1024)/(2*50Hz))-1
 
 void initialize_system()
 {
     cli();
 
+    // Ext clock setup
     CLKPR = (1 << CLKPCE);  // enable change of clock prescaler
     CLKPR = 0x00;           // set clock prescaler to 1 (default)
 
+    // On/Off Switch set up
     DDRD &= ~(1 << SWITCH_PIN);    // set PD3 as input (for switch)
     PORTD |= (1 << SWITCH_PIN);    // enable pull-up resistor on PD3
     EICRA |= (1 << ISC01);  // set INT0 to trigger on falling edge
@@ -16,18 +18,18 @@ void initialize_system()
 
     // Set up servo PWM for timer 0
     DDRD |= (1 << SERVO_PIN);                                   // Enable Servo pin (PD5)
-    OCR0A = pwm_top;                                            // Set TOP value for OCR0A
+    OCR0A = 155;                                            // Set TOP value for OCR0A
     TCNT0 = 0x0;                                                //Set count to 0
     TCCR0A = 0x23;                                              //COM0A 0; COM0B 2; WGM0 3;
     TCCR0B = 0xD;                                               //CS0 RUNNING_CLK_1024; FOC0A disabled; FOC0B disabled; Fast Mode PWM with OCR0A as TOP; 
     TIMSK0 = 0x04;                                              //OCIE0A disabled; OCIE0B disabled; TOIE0 enabled for debugging; 
-    uint16_t servo_dc = pwm_top * 0.09 + (pwm_top * 0.056);      // Calibrated duty cycle: 9%: 0 degrees, 21%: 180 degrees, set initial position to 90 degrees
+    uint16_t servo_dc = 155 * 0.09 + (155 * 0.056);      // Calibrated duty cycle: 9%: 0 degrees, 21%: 180 degrees, set initial position to 90 degrees
     OCR0B = servo_dc;                                           // Set OCR0B at 7.5% duty cycle for middle position
 
 
-    // Set up LED PWM for timer 1
+    // // Set up LED PWM for timer 1
     DDRB |= (1 << LED_PIN);     // Enable led pin (PB1)
-    ICR1 = pwm_top;             // Use same TOP as for timer 0, but using ICR1 register
+    ICR1 = 155;             // Use same TOP as for timer 0, but using ICR1 register
     TCNT1 = 0x0;                //Set count to 0
     TCCR1A = 0x82;              //COM1A 2; COM1B 0; WGM1 3; 
     TCCR1B = 0x1D;              //CS1 RUNNING_CLK_1024; ICES1 disabled; ICNC1 disabled; WGM1 3; 
@@ -36,24 +38,18 @@ void initialize_system()
     OCR1A = 0;                  // Set the LED brightness to 0
 
     // Set up ADC
-    ADMUX = (1 << REFS0);       //external capacitor at Vref and ADC done from pin ADC0
+    ADMUX = (1 << REFS0); //external capacitor at Vref and ADC done from pin ADC0
 	ADCSRA = (1 << ADIE) | (1 << ADPS0) | (1 << ADPS1) | (1 << ADPS2); //enable and set prescaler
 	ADCSRA |= (1 << ADEN); // Enable AD-converter
-    //ADMUX |= (1 << ADLAR); // Setting to Left justified mode so only 8 bits can be read
+    ADMUX |= (1 << ADLAR); // Setting to Left justified mode so only 8 bits can be read
     DIDR0 = (1 << ADC0D) | (1 << ADC1D); // disable input buffer for ADC pins.
     
     
 	// USART Setup
-    UBRR0 = 0x067;
-
-    //DOR0 disabled; FE0 disabled; MPCM0 disabled; RXC0 disabled; TXC0 disabled; U2X0 disabled; UDRE0 disabled; UPE0 disabled; 
-    UCSR0A = 0x0;
-
-    //RXB80 disabled; RXCIE0 disabled; RXEN0 enabled; TXB80 disabled; TXCIE0 disabled; TXEN0 enabled; UCSZ02 disabled; UDRIE0 disabled; 
-    UCSR0B = 0x18;
-
-    //UCPOL0 disabled; UCSZ0 3; UMSEL0 Asynchronous Mode; UPM0 Disabled; USBS0 1-bit; 
-    UCSR0C = 0x6;
+    UBRR0 = UBRRVALUE;
+    UCSR0A = 0x0;   //DOR0 disabled; FE0 disabled; MPCM0 disabled; RXC0 disabled; TXC0 disabled; U2X0 disabled; UDRE0 disabled; UPE0 disabled; 
+    UCSR0B = 0x18;  //RXB80 disabled; RXCIE0 disabled; RXEN0 enabled; TXB80 disabled; TXCIE0 disabled; TXEN0 enabled; UCSZ02 disabled; UDRIE0 disabled;
+    UCSR0C = 0x6;   //UCPOL0 disabled; UCSZ0 3; UMSEL0 Asynchronous Mode; UPM0 Disabled; USBS0 1-bit; 
 
     // Enable global interrups
     sei();
@@ -69,7 +65,7 @@ uint16_t read_adc(uint8_t adc_pin) {
     // Wait for conversion to complete
     while( !(ADCSRA & (1<<ADIF)) );
     // Return ADC result
-    return ADC;
+    return ADCH;
 }
 
 
@@ -111,13 +107,15 @@ void update_led(uint16_t servo_pos) {
 
 
 void send_UART(uint16_t servo_pos, float temp) {
-    // Convert servo position to ASCII string
+    // This is bad code, but I couldn't be bothered to play around with strcpy
     char buf[10];
-    //char* string = "VIHHU SAATANA\r\n";
-    //char dest[12];
-    //strcpy( dest, string );
-    //strcat(string, itoa(servo_pos, buf, 10));
+    char* servo_string = "\r\n Servo angle: ";
+    USART_Transmit_string(servo_string);
     USART_Transmit_string(itoa(servo_pos, buf, 10));
+
+    char* temp_string = "\r\n Temp: ";
+    USART_Transmit_string(temp_string);
+    USART_Transmit_string(itoa((uint16_t)temp, buf, 10));
 }
 
 void USART_Transmit_string( char *data )
