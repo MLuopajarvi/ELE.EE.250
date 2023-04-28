@@ -45,6 +45,7 @@ void initialize_system()
     
 	// USART Setup
     UBRR0 = UBRRVALUE;
+
     UCSR0A = 0x0;   //DOR0 disabled; FE0 disabled; MPCM0 disabled; RXC0 disabled; TXC0 disabled; U2X0 disabled; UDRE0 disabled; UPE0 disabled; 
     UCSR0B = 0x18;  //RXB80 disabled; RXCIE0 disabled; RXEN0 enabled; TXB80 disabled; TXCIE0 disabled; TXEN0 enabled; UCSZ02 disabled; UDRIE0 disabled;
     UCSR0C = 0x6;   //UCPOL0 disabled; UCSZ0 3; UMSEL0 Asynchronous Mode; UPM0 Disabled; USBS0 1-bit; 
@@ -73,23 +74,34 @@ uint16_t read_adc(uint8_t adc_pin) {
 
 
 // Updates the position of the servo motor
-void update_servo_position(int degrees) {
+uint16_t update_servo_position(uint16_t pot_adc, int incr, int temp) {
     // Convert degrees to pulse width
     int zero_point = pwm_top*0.09;
 
-    int pulse_width = zero_point + (degrees * 0.1035);
+    uint32_t pot_angle = (pot_adc*180)/500;
+    uint16_t angle = ((pot_angle+temp)/2)+incr;
+    uint16_t pulse_width = zero_point + (angle * 0.1035);
     
     // Set duty cycle based on pulse width
     OCR0B = pulse_width;
+
+    return angle;
 }
 
 float read_temp() {
     // Read thermistor resistance
     uint16_t adc_val = read_adc(THERM_PIN);
-    float thermistor_r = THERMISTOR_R0 * ((1023.0 / adc_val) - 1.0);
+    //float thermistor_r = THERMISTOR_R0 * ((500.0 / adc_val) - 1.0);
+    //float thermistor_r = THERMISTOR_R0 * adc_val / (500.0-adc_val)
     // Calculate temperature in degrees Celsius
-    float temp_c = (1.0 / ((log(thermistor_r / THERMISTOR_R0) / THERMISTOR_B) + (1.0 / 298.15))) - 273.15;
-    return temp_c;
+    //float temp_c = (1.0 / ((log(thermistor_r / THERMISTOR_R0) / THERMISTOR_B) + (1.0 / 298.15))) - 273.15;
+    //float temp_c = (1.0 / (A+B*log(thermistor_r / THERMISTOR_R0)+C*log(thermistor_r/THERMISTOR_R0)^3) - 273.15;
+    float voltage = (adc_val / 500.0) * 5.0; // Convert ADC value to voltage
+    float resistance = (5.0 - voltage) / voltage * THERMISTOR_R0; // Calculate thermistor resistance
+    float temperature = 1.0 / (log(resistance / THERMISTOR_R0) / THERMISTOR_B + 1 / 298.15) - 273.15; // Calculate temperature in Celsius
+    return temperature;
+
+    return temperature;
 }
 
 void enter_low_power_mode() {
@@ -143,15 +155,16 @@ void USART_Transmit_string( char *data )
 
 }
 
-void read_UART() {
+int read_UART() {
     if (UCSR0A & (1 << RXC0)) {
         // Read input character from UART
         char input_char = UDR0;
         // Handle increment/decrement commands
         if (input_char == '+') {
-            update_servo_position(1);
+            return 1;
         } else if (input_char == '-') {
-            update_servo_position(-1);
+            return -1;
         }
     }
+    return 0;
 }

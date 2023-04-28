@@ -5,7 +5,8 @@
 volatile uint8_t switch_on = 0;
 volatile uint16_t servo_angle = 90; // initial servo angle is set to 90 (0 for the simulation servo)
 volatile float temp = 0;
-volatile int pot_adc = 0;
+volatile uint16_t pot_adc = 0;
+volatile int terminal_increment = 0;
 
 
 ISR(INT1_vect)
@@ -25,6 +26,10 @@ ISR(TIMER0_COMPB_vect) {
     //For what ever reason, ISR for T0 needs to be added for the program to work at all
 }
 
+ISR(USART_RX_vect) {
+    terminal_increment = read_UART();
+}
+
 
 int main(void)
 {
@@ -35,16 +40,9 @@ int main(void)
     {
         if (switch_on == 1)
         {
-            pot_adc = 5000;
-            servo_angle = pot_adc/28; // conversion from ad to angle, rough rounding from 27,77 to 28
-            update_servo_position(servo_angle);
-            update_led(servo_angle);
-            send_UART(servo_angle, temp);
-            _delay_ms(1000);
-
             pot_adc = read_adc(POT_PIN);
-            servo_angle = pot_adc/28; // conversion from ad to angle, rough rounding from 27,77 to 28
-            update_servo_position(servo_angle);
+            temp = read_temp();
+            servo_angle = update_servo_position(pot_adc, terminal_increment, (int)temp);
             update_led(servo_angle);
             send_UART(servo_angle, temp);
             _delay_ms(1000);
