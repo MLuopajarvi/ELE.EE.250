@@ -3,7 +3,7 @@
 #include "../include/functions.h"
 
 volatile uint8_t switch_on = 0;
-volatile uint16_t servo_angle = 90; // initial servo angle is set to 90 (0 for the simulation servo)
+volatile uint16_t servo_angle = 90; // initial servo angle is set to 90 (middle)
 volatile float temp = 0;
 volatile uint16_t pot_adc = 0;
 volatile int terminal_increment = 0;

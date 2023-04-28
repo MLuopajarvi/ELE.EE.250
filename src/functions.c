@@ -57,16 +57,8 @@ void initialize_system()
 
 
 uint16_t read_adc(uint8_t adc_pin) {
-    // // Select ADC input pin
-    // ADMUX = (ADMUX & 0xF0) | (adc_pin & 0x0F);
-    // // Start ADC conversion
-    // ADCSRA |= (1 << ADSC);
-    // // Wait for conversion to complete
-    // while( !(ADCSRA & (1<<ADIF)) );
-    // // Return ADC result
-    // return ADCH;
     ADMUX &= 0xF0;                  // Clear previous ADC channel
-    ADMUX |= adc_pin;           // Set new ADC channel
+    ADMUX |= adc_pin;               // Set new ADC channel
     ADCSRA |= (1 << ADSC);          // Start conversion
     while (ADCSRA & (1 << ADSC));   // Wait for conversion to complete
     return ADC;                     // Return the ADC result
@@ -89,13 +81,7 @@ uint16_t update_servo_position(uint16_t pot_adc, int incr, int temp) {
 }
 
 float read_temp() {
-    // Read thermistor resistance
     uint16_t adc_val = read_adc(THERM_PIN);
-    //float thermistor_r = THERMISTOR_R0 * ((500.0 / adc_val) - 1.0);
-    //float thermistor_r = THERMISTOR_R0 * adc_val / (500.0-adc_val)
-    // Calculate temperature in degrees Celsius
-    //float temp_c = (1.0 / ((log(thermistor_r / THERMISTOR_R0) / THERMISTOR_B) + (1.0 / 298.15))) - 273.15;
-    //float temp_c = (1.0 / (A+B*log(thermistor_r / THERMISTOR_R0)+C*log(thermistor_r/THERMISTOR_R0)^3) - 273.15;
     float voltage = (adc_val / 500.0) * 5.0; // Convert ADC value to voltage
     float resistance = (5.0 - voltage) / voltage * THERMISTOR_R0; // Calculate thermistor resistance
     float temperature = 1.0 / (log(resistance / THERMISTOR_R0) / THERMISTOR_B + 1 / 298.15) - 273.15; // Calculate temperature in Celsius
@@ -116,13 +102,14 @@ void enter_low_power_mode() {
 void update_led(uint16_t servo_pos) {
     // Map servo position to LED brightness (0-255)
     uint16_t brightness = servo_pos / 2;
+
     // Set Timer 0 compare match value to control LED brightness
     OCR1A = brightness;
 }
 
 
 void send_UART(uint16_t servo_pos, float temp) {
-    // This is bad code, but I couldn't be bothered to play around with strcpy
+    // Quick and dirty solution, fix if time
     char buf[10];
     char* servo_string = "\r\n Servo angle: ";
     USART_Transmit_string(servo_string);
