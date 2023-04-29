@@ -14,12 +14,12 @@ void initialize_system()
 
     // Set up servo PWM for timer 0
     DDRD |= (1 << SERVO_PIN);                                   // Enable Servo pin (PD5)
-    OCR0A = 155;                                            // Set TOP value for OCR0A
+    OCR0A = 155;                                                // Set TOP value for OCR0A
     TCNT0 = 0x0;                                                //Set count to 0
     TCCR0A = 0x23;                                              //COM0A 0; COM0B 2; WGM0 3;
     TCCR0B = 0xD;                                               //CS0 RUNNING_CLK_1024; FOC0A disabled; FOC0B disabled; Fast Mode PWM with OCR0A as TOP; 
     TIMSK0 = 0x04;                                              //OCIE0A disabled; OCIE0B disabled; TOIE0 enabled for debugging; 
-    uint16_t servo_dc = 155 * 0.09 + (155 * 0.056);      // Calibrated duty cycle: 9%: 0 degrees, 21%: 180 degrees, set initial position to 90 degrees
+    uint16_t servo_dc = pwm_top * 0.09;                         // Calibrated duty cycle: 9%: 0 degrees, 21%: 180 degrees, set initial position to 0 degrees
     OCR0B = servo_dc;                                           // Set OCR0B at 7.5% duty cycle for middle position
 
 
@@ -43,7 +43,7 @@ void initialize_system()
     UBRR0 = UBRRVALUE;
 
     UCSR0A = 0x0;   //DOR0 disabled; FE0 disabled; MPCM0 disabled; RXC0 disabled; TXC0 disabled; U2X0 disabled; UDRE0 disabled; UPE0 disabled; 
-    UCSR0B = 0x18;  //RXB80 disabled; RXCIE0 disabled; RXEN0 enabled; TXB80 disabled; TXCIE0 disabled; TXEN0 enabled; UCSZ02 disabled; UDRIE0 disabled;
+    UCSR0B = 0x98;  //RXB80 disabled; RXCIE0 enabled; RXEN0 enabled; TXB80 disabled; TXCIE0 disabled; TXEN0 enabled; UCSZ02 disabled; UDRIE0 disabled;
     UCSR0C = 0x6;   //UCPOL0 disabled; UCSZ0 3; UMSEL0 Asynchronous Mode; UPM0 Disabled; USBS0 1-bit; 
 
     // Enable global interrups
@@ -106,7 +106,7 @@ void enter_low_power_mode() {
 
 void update_led(uint16_t servo_pos) {
     // Map servo position to LED brightness (0-255)
-    uint16_t brightness = servo_pos / 2;
+    uint16_t brightness = (servo_pos / 180.0) * 255.0;
 
     // Set Timer 0 compare match value to control LED brightness
     OCR1A = brightness;

@@ -3,7 +3,7 @@
 #include "../include/functions.h"
 
 volatile uint8_t switch_on = 0;
-volatile uint16_t servo_angle = 90; // initial servo angle is set to 90 (middle)
+volatile uint16_t servo_angle = 0; // initial servo angle is set to 0
 volatile float temp = 0;
 volatile uint16_t pot_adc = 0;
 volatile int terminal_increment = 0;
@@ -26,7 +26,7 @@ ISR(TIMER0_COMPB_vect) {
 }
 
 ISR(USART_RX_vect) {
-    terminal_increment = read_UART();
+    terminal_increment += read_UART();
 }
 
 
