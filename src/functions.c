@@ -10,11 +10,7 @@ void initialize_system()
     CLKPR = (1 << CLKPCE);  // enable change of clock prescaler
     CLKPR = 0x00;           // set clock prescaler to 1 (default)
 
-    // On/Off Switch set up
-    DDRD &= ~(1 << SWITCH_PIN);    // set PD3 as input (for switch)
-    PORTD |= (1 << SWITCH_PIN);    // enable pull-up resistor on PD3
-    EICRA |= (1 << ISC01);  // set INT0 to trigger on falling edge
-    EIMSK |= (1 << INT1);   // enable INT1
+    enable_on_off();
 
     // Set up servo PWM for timer 0
     DDRD |= (1 << SERVO_PIN);                                   // Enable Servo pin (PD5)
@@ -54,6 +50,13 @@ void initialize_system()
     sei();
 }
 
+void enable_on_off() {
+    // On/Off Switch set up
+    DDRD &= ~(1 << SWITCH_PIN);    // set PD3 as input (for switch)
+    PORTD |= (1 << SWITCH_PIN);    // enable pull-up resistor on PD3
+    EICRA |= (1 << ISC01);  // set INT0 to trigger on falling edge
+    EIMSK |= (1 << INT1);   // enable INT1
+}
 
 
 uint16_t read_adc(uint8_t adc_pin) {
@@ -91,11 +94,13 @@ float read_temp() {
 }
 
 void enter_low_power_mode() {
-    TCCR1B = 0;  // stop Timer0  
-    // Enter sleep mode with ADC noise reduction
-    set_sleep_mode(SLEEP_MODE_ADC);
+    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+    cli();
     sleep_enable();
+    sei();
     sleep_cpu();
+  
+    // entry-point after wake-up
     sleep_disable();
 }
 

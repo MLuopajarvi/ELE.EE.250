@@ -23,6 +23,7 @@
 #define UBRRVALUE (F_CPU/(16ul*9600)-1)
 
 void initialize_system();
+void enable_on_off();
 uint16_t update_servo_position(uint16_t degrees, int incr, int temp);
 void enter_low_power_mode();
 void update_led(uint16_t servo_pos);

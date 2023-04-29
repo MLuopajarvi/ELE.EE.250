@@ -18,7 +18,6 @@ ISR(INT1_vect)
     else
     {
         switch_on = 0;
-        enter_low_power_mode();
     }
 }
 
@@ -46,6 +45,9 @@ int main(void)
             update_led(servo_angle);
             send_UART(servo_angle, temp);
             _delay_ms(1000);
+        }
+        else {
+            enter_low_power_mode();
         }
     }
     
